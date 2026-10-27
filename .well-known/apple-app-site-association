@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["69238PK3KL.net.fittd.app"],
+        "components": [
+          { "/": "/@*", "comment": "profiles: fittd.net/@handle" },
+          { "/": "/i/*", "comment": "invites: fittd.net/i/code" }
+        ]
+      }
+    ]
+  }
+}

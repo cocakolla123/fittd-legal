@@ -1,1 +1,34 @@
-<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=privacy.html"><title>fittd</title><a href="privacy.html">fittd Privacy Policy</a>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fittd: fit of the day</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050505;color:#f4f4f4;font:17px/1.5 -apple-system,system-ui,sans-serif;padding:24px 16px}
+main{max-width:420px;width:100%;text-align:center}.mark{font-weight:800;font-size:56px;letter-spacing:-3px;margin:0}.who{font-weight:700;font-size:26px;margin:28px 0 4px}.sub{opacity:.6;margin:0 0 28px}
+a.btn{display:block;padding:16px;border-radius:999px;background:#f4f4f4;color:#050505;font-weight:700;text-decoration:none;margin:10px 0}a.ghost{background:transparent;color:#f4f4f4;border:1px solid #333}
+.foot{margin-top:32px;font-size:14px;opacity:.5}.foot a{color:inherit}
+</style></head><body><main>
+<p class="mark">fittd.</p>
+<p class="who" id="who">fit of the day</p>
+<p class="sub" id="sub">Post your fit. Vote on campus. Win the crown.</p>
+<a class="btn" id="open" href="fittd://">Open in fittd</a>
+<a class="btn ghost" href="https://testflight.apple.com/join/m5Ek69D2">Get fittd on TestFlight</a>
+<p class="foot"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+</main><script>
+// fittd.net/@handle and fittd.net/i/code open the app straight away when it's installed
+// (universal links). This page is for everyone else: it names the profile or invite and
+// offers the app.
+(function () {
+  var parts = location.pathname.split("/").filter(Boolean);
+  var handle = /^@([a-z0-9._]{3,20})$/i.exec(parts[0] || "");
+  var invite = parts[0] === "i" && /^[a-z0-9]{4,32}$/i.test(parts[1] || "") ? parts[1].toLowerCase() : null;
+  if (handle) {
+    document.getElementById("who").textContent = "@" + handle[1].toLowerCase();
+    document.getElementById("sub").textContent = "See their fits and vote on fittd.";
+    document.title = "@" + handle[1].toLowerCase() + " on fittd";
+    document.getElementById("open").href = "fittd://u/" + handle[1].toLowerCase();
+  } else if (invite) {
+    document.getElementById("who").textContent = "You're invited";
+    document.getElementById("sub").textContent = "A friend wants you on fittd.";
+    document.getElementById("open").href = "fittd://i/" + invite;
+  }
+})();
+</script></body></html>
