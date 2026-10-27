@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fittd review</title><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#050505;color:#f4f4f4;font:16px/1.5 -apple-system,system-ui,sans-serif;padding:24px 16px}
+main{max-width:640px;margin:0 auto}h1{font-size:28px;margin:0 0 4px}.meta{opacity:.6;font-size:14px;margin:0 0 24px}
+.card{border:1px solid #262626;border-radius:16px;padding:16px;margin:0 0 16px;background:#0d0d0d}.card.done{opacity:.45}
+.who{font-weight:700;font-size:18px}.tag{display:inline-block;font-size:13px;padding:2px 10px;border-radius:999px;background:#1f1f1f;margin:4px 4px 0 0}
+.tag.bad{background:#4a1212;color:#ffb4b4}.photos{display:flex;gap:8px;overflow-x:auto;margin:12px 0}
+.ph{position:relative;flex:0 0 auto;width:150px;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:#1a1a1a;cursor:pointer}
+.ph img{width:100%;height:100%;object-fit:cover;filter:blur(24px);transition:filter .2s}.ph.shown img{filter:none}
+.ph span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}.ph.shown span{display:none}
+blockquote{margin:12px 0;padding:8px 12px;border-left:3px solid #333;white-space:pre-wrap;word-break:break-word}
+ul{margin:8px 0;padding-left:20px;font-size:14px;opacity:.85}.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{flex:1;min-width:90px;padding:12px;border-radius:999px;border:1px solid #333;background:#f4f4f4;color:#050505;font:inherit;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:#f4f4f4}button.danger{background:#b3261e;color:#fff;border-color:#b3261e}button:disabled{opacity:.4;cursor:default}
+.msg{padding:12px;border-radius:12px;background:#141414}.err{color:#ffb4b4}
+</style></head><body><main>
+<h1>Reports</h1><p class="meta" id="meta">Loading…</p><div id="list"></div>
+</main><script>
+// Opened from the report email. The signed link after "#" is the only credential; it never leaves
+// this page except to the review-report function.
+const FN = "https://ccuerdwanhbywktqrdry.supabase.co/functions/v1/review-report";
+const token = new URLSearchParams(location.hash.slice(1)).get("t") || "";
+const REASONS = {nudity:"Nudity or sexual",not_a_fit:"Not a fit",harassment:"Harassment",someone_else:"Someone else in the photo",spam:"Spam or ads",other:"Other"};
+const $ = (tag, props = {}, kids = []) => { const e = document.createElement(tag); Object.assign(e, props); for (const k of kids) e.append(k); return e; };
+
+async function call(body) {
+  const res = await fetch(FN, {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({token, ...body})});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error?.message || "Something went wrong. Try again.");
+  return data;
+}
+
+function card(it) {
+  const what = it.type === "post" ? "fit" : it.type === "comment" ? "comment" : "account";
+  const who = it.subject ? `@${it.subject.handle} (${it.subject.display_name})` : "A deleted account";
+  const c = $("div", {className: "card"});
+  c.append($("div", {className: "who", textContent: it.type === "user" ? who : `${who}'s ${what}`}));
+  const tags = $("div");
+  for (const r of it.reasons) tags.append($("span", {className: "tag" + (r === "nudity" ? " bad" : ""), textContent: REASONS[r] || r}));
+  tags.append($("span", {className: "tag", textContent: `${it.reports} report${it.reports === 1 ? "" : "s"}`}));
+  if (it.post && it.post.status === "removed") tags.append($("span", {className: "tag", textContent: "Hidden now"}));
+  c.append(tags);
+  if (it.photos?.length) {
+    const row = $("div", {className: "photos"});
+    for (const url of it.photos) {
+      const ph = $("div", {className: "ph"}, [$("img", {src: url, alt: "", referrerPolicy: "no-referrer"}), $("span", {textContent: "Tap to show"})]);
+      ph.onclick = () => ph.classList.toggle("shown");
+      row.append(ph);
+    }
+    c.append(row);
+  }
+  if (it.post?.caption) c.append($("blockquote", {textContent: it.post.caption}));
+  if (it.comment) c.append($("blockquote", {textContent: it.comment.body}));
+  const notes = it.notes.filter(n => n.details);
+  if (notes.length) c.append($("ul", {}, notes.map(n => $("li", {textContent: `${REASONS[n.reason] || n.reason}: ${n.details}`}))));
+  const status = $("p", {className: "msg", hidden: true});
+  const buttons = [];
+  const act = async (action, label) => {
+    if (action === "ban" && !confirm(`Ban ${who}? Their fits and comments are removed and they can't sign in again.`)) return;
+    buttons.forEach(b => b.disabled = true);
+    try {
+      await call({action, target: it.target});
+      status.textContent = label; status.className = "msg"; status.hidden = false; c.classList.add("done");
+    } catch (e) {
+      status.textContent = e.message; status.className = "msg err"; status.hidden = false; buttons.forEach(b => b.disabled = false);
+    }
+  };
+  const row = $("div", {className: "row"});
+  if (it.type !== "user") {
+    const keep = $("button", {className: "ghost", textContent: "Keep"}); keep.onclick = () => act("keep", "Kept. The reports are closed.");
+    const remove = $("button", {textContent: "Remove"}); remove.onclick = () => act("remove", "Removed.");
+    buttons.push(keep, remove);
+  } else {
+    const keep = $("button", {className: "ghost", textContent: "No action"}); keep.onclick = () => act("keep", "Closed with no action.");
+    buttons.push(keep);
+  }
+  const ban = $("button", {className: "danger", textContent: "Ban"}); ban.onclick = () => act("ban", "Banned. Their fits and comments are removed.");
+  buttons.push(ban);
+  row.append(...buttons);
+  c.append(row, status);
+  return c;
+}
+
+(async () => {
+  const meta = document.getElementById("meta"), list = document.getElementById("list");
+  if (!token) { meta.textContent = "Open this page from a report email."; return; }
+  try {
+    const {items} = await call({});
+    meta.textContent = items.length ? `${items.length} open. Photos stay blurred until you tap them.` : "Nothing open. This one was already handled.";
+    for (const it of items) list.append(card(it));
+  } catch (e) {
+    meta.textContent = e.message; meta.className = "meta err";
+  }
+})();
+</script></body></html>
